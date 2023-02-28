@@ -102,7 +102,6 @@ def finetune(args):
             prompter.load_state_dict(checkpoint["state_dict"])
             print("=> loaded checkpoint '{}' (epoch {})".format(args.resume, checkpoint["epoch"]))
             optimizer = checkpoint["optimizer"]
-            scheduler = checkpoint["scheduler"]
             epochs_since_improvement = checkpoint["epochs_since_improvement"]
             best_acc1 = checkpoint["best_acc1"]
         else:
@@ -149,7 +148,6 @@ def finetune(args):
                 "best_acc1": best_acc1,
                 "state_dict": prompter.state_dict(),
                 "optimizer": optimizer.state_dict(),
-                "scheduler": scheduler.state_dict(),
             },
             ckpdir,
             is_best=is_best,
@@ -300,9 +298,9 @@ if __name__ == "__main__":
         # "MNIST",
         # "RESISC45",
         # "SUN397",
-        "CIFAR10",
+        # "CIFAR10",
         "MNIST",
-        "SVHN",
+        # "SVHN",
     ]
     epochs = {
         "Cars": 35,
@@ -327,6 +325,7 @@ if __name__ == "__main__":
             # args.epochs = epochs[dataset]
             args.data = data
             args.dataset = dataset
+            args.run_name = f"{dataset}-{args.method}"
             args.batch_size = 128
             args.model = model
             # args.save = f"checkpoints/{model}"

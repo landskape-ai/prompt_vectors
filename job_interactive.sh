@@ -1,7 +1,7 @@
 python3 src/finetune.py \
     --data /data/jaygala/ssl-finetune-exps/data \
     --model ViT-B/32 \
-    --lr 40 \
+    --lr 10 \
     --wd 0 \
     --epochs 10 \
     --save /data/jaygala/ssl-finetune-exps/prompt_exp \
