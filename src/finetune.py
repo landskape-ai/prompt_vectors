@@ -41,8 +41,17 @@ def finetune(args):
 
     dataset = args.dataset
     ckpdir = os.path.join(args.save, dataset)
+    os.makedirs(ckpdir, exist_ok=True)
 
     assert dataset is not None, "Please provide a training dataset."
+    
+    # create model
+    model, preprocess = clip.load(args.model, args.device, jit=False)
+    convert_models_to_fp32(model)
+    model.eval()
+
+    prompter = prompters.__dict__[args.method](args).to(args.device)
+    
     template_fn = get_templates(dataset)[0]
     args.template_str = template_fn("`<class>`")
     print(f"template: {args.template_str}")
@@ -56,16 +65,9 @@ def finetune(args):
     train_loader = get_dataloader(train_dataset, is_train=True, args=args, image_encoder=None)
     val_loader = get_dataloader(val_dataset, is_train=False, args=args, image_encoder=None)
 
-    class_names = train_dataset.classes
+    class_names = train_dataset.classnames
     class_names = refine_classname(class_names)
     texts = [template_fn(label) for label in class_names]
-
-    # create model
-    model, preprocess = clip.load(args.model, args.device, jit=False)
-    convert_models_to_fp32(model)
-    model.eval()
-
-    prompter = prompters.__dict__[args.method](args).to(args.device)
 
     # define criterion and optimizer
     optimizer = torch.optim.AdamW(prompter.parameters(), lr=args.lr, weight_decay=args.wd)
@@ -81,7 +83,7 @@ def finetune(args):
             entity="adversarial-reprogramming-vqa",
             project="Prompt Vectors for CLIP",
             name=args.run_name,
-            dir=args.save,
+            dir=ckpdir,
             save_code=True,
             config=vars(args),
         )
@@ -284,29 +286,31 @@ def validate(val_loader, texts, model, prompter, criterion, args):
 
 
 if __name__ == "__main__":
-    if torch.cuda.is_available():
+    if not torch.cuda.is_available():
         print("No GPU available!")
         sys.exit(1)
 
-    data = "data"
-    models = ["ViT-B-32"]
+    data = "/data/jaygala/ssl-finetune-exps/data"
+    models = ["ViT-B/32"]
     datasets = [
-        "Cars",
-        "DTD",
-        "EuroSAT",
-        "GTSRB",
+        # "Cars",
+        # "DTD",
+        # "EuroSAT",
+        # "GTSRB",
+        # "MNIST",
+        # "RESISC45",
+        # "SUN397",
+        "CIFAR10",
         "MNIST",
-        "RESISC45",
-        "SUN397",
         "SVHN",
     ]
     epochs = {
-        # 'Cars': 35,
-        # 'DTD': 76,
-        "EuroSAT": 12,
+        "Cars": 35,
+        'DTD': 76,
+        # "EuroSAT": 12,
         "GTSRB": 11,
         "MNIST": 5,
-        "RESISC45": 15,
+        # "RESISC45": 15,
         "SUN397": 14,
         "SVHN": 4,
         # 'ImageNet': 4
@@ -319,12 +323,12 @@ if __name__ == "__main__":
             print("-" * 100)
             args = parse_arguments()
             torch.cuda.set_device(int(args.gpu))
-            args.lr = 1e-5
-            args.epochs = epochs[dataset]
+            # args.lr = 1e-5
+            # args.epochs = epochs[dataset]
             args.data = data
             args.dataset = dataset
             args.batch_size = 128
             args.model = model
-            args.save = f"checkpoints/{model}"
+            # args.save = f"checkpoints/{model}"
             args.device = "cuda"
             finetune(args)
